@@ -8,7 +8,7 @@ using namespace std;
 #include "testcase.h"
 
 constexpr auto LENGTH		= 9;
-constexpr auto TEST_MODE	= 2;	// 0 : OFF, 1 : Test case, 2 : Function Test
+constexpr auto TEST_MODE	= 1;	// 0 : OFF, 1 : Test case, 2 : Function Test
 
 vector<string> split(string input, char delimiter) {
 	vector<string> answer;
@@ -32,12 +32,38 @@ bool Row_Check(vector<vector<string>> arr) {
 }
 
 bool Col_Check(vector<vector<string>> arr) {
-	// Input this function ...
+	map<string, int> list;
+	for (int i = 0; i < LENGTH; i++) {
+		list = {};
+		for (int j = 0; j < LENGTH; j++) {
+			if (list.find(arr[j][i]) == list.end()) list[arr[j][i]] = 1;
+			else return false;
+		}
+	}
 	return true;
 }
 
 bool Square_Check(vector<vector<string>> arr) {
-	// Input this function ...
+	map<string, int> list1, list2, list3;
+	for (int i = 0; i < LENGTH; i++) {
+		if (i % (LENGTH / 3) == 0)
+			list1 = {}, list2 = {}, list3 = {};
+
+		for (int j = 0; j < LENGTH; j++) {
+			if (j / (LENGTH / 3) == 0) {
+				if (list1.find(arr[i][j]) == list1.end()) list1[arr[i][j]] = 1;
+				else return false;
+			}
+			else if (j / (LENGTH / 3) == 1) {
+				if (list2.find(arr[i][j]) == list2.end()) list2[arr[i][j]] = 1;
+				else return false;
+			}
+			else {
+				if (list3.find(arr[i][j]) == list3.end()) list3[arr[i][j]] = 1;
+				else return false;
+			}
+		}
+	}
 	return true;
 }
 
