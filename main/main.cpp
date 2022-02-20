@@ -69,7 +69,54 @@ bool Square_Check(vector<vector<string>> arr) {
 
 vector<vector<string>> calculate(vector<vector<string>> arr) {
 	vector<vector<string>> result = arr;
-	// Input this function ...
+	map<vector<int>, vector<string>> blank, number;
+
+	// 공백 칸과 숫자 칸 분류하여 map 형태로 저장
+	for (int i = 0; i < LENGTH; i++) {
+		for (int j = 0; j < LENGTH; j++) {
+			if (result[i][j] == "0")
+				blank[{ i, j }] = { "1","2","3","4","5","6","7","8","9" };
+			else
+				number[{ i, j }] = { result[i][j] };
+		}
+	}
+
+	// 공백 칸 리스트 중 숫자 칸 리스트에 포함된 숫자가 있을 경우 제거
+	for (const auto& num : number) {
+		for (const auto& b : blank) {
+			if (num.first[0] == b.first[0] || num.first[1] == b.first[1]) {
+				auto index = find(b.second.begin(), b.second.end(), num.second[0]);
+				if (index != b.second.end()) {
+					vector<string> tmp = b.second;
+					tmp.erase(remove(tmp.begin(), tmp.end(), num.second[0]), tmp.end());
+					blank[{ b.first[0], b.first[1] }] = tmp;
+				}
+			}
+		}
+	}
+
+	// 공백 칸 리스트의 value가 0개이면 없애고, 1개이면 result에 값을 넣고 없앰
+	vector<vector<int>> rmlist;
+	for (const auto& item : blank) {
+		if (item.second.size() == 0)
+			rmlist.push_back(item.first);
+		else if (item.second.size() == 1) {
+			result[item.first[0]][item.first[1]] = item.second[0];
+			rmlist.push_back(item.first);
+		}
+	}
+	for (const auto& item : rmlist) {
+		blank.erase(item);
+	}
+
+	for (const auto& item : blank) {
+		cout << "[" << item.first[0] << "," << item.first[1] << "]\t";
+		for (const auto& list : item.second) {
+			cout << list << ",";
+		}
+		cout << endl;
+	}
+
 	return result;
 }
 
@@ -78,13 +125,36 @@ int main(void) {
 
 	if (TEST_MODE == 1) {
 		bool result = false;
-		for (int i = 0; i < TESTCASE_INPUT.size(); i++)
-			if (calculate(TESTCASE_INPUT[i]) != TESTCASE_OUTPUT[i]) {
+		for (int index = 0; index < TESTCASE_INPUT.size(); index++) {
+			vector<vector<string>> input = calculate(TESTCASE_INPUT[index]);
+
+			cout << "Input" << endl;
+			for (int i = 0; i < LENGTH; i++) {
+				for (int j = 0; j < LENGTH; j++) {
+					cout << input[i][j] << " ";
+					if ((j + 1) % 3 == 0) cout << "\t";
+				}
+				cout << endl;
+				if ((i + 1) % 3 == 0) cout << endl;
+			}
+
+			cout << endl << "Output" << endl;
+			for (int i = 0; i < LENGTH; i++) {
+				for (int j = 0; j < LENGTH; j++) {
+					cout << TESTCASE_OUTPUT[index][i][j] << " ";
+					if ((j + 1) % 3 == 0) cout << "\t";
+				}
+				cout << endl;
+				if ((i + 1) % 3 == 0) cout << endl;
+			}
+
+			if (input != TESTCASE_OUTPUT[index]) {
 				result = true;
 				break;
 			}
+		}
 		string message = result ? "Fail" : "Success";
-		cout << message << endl;
+		cout << endl << message << endl;
 	}
 	else if (TEST_MODE == 2) {
 		for (int i = 0; i < LENGTH; i++) {
