@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <map>
+#include "stdlib.h"
 using namespace std;
 #include "testcase.h"
 
@@ -67,32 +68,81 @@ bool Square_Check(vector<vector<string>> arr) {
 	return true;
 }
 
-vector<vector<string>> calculate(vector<vector<string>> arr) {
-	vector<vector<string>> result = arr;
-	map<vector<int>, vector<string>> blank, number;
-
-	// 공백 칸과 숫자 칸 분류하여 map 형태로 저장
-	for (int i = 0; i < LENGTH; i++) {
-		for (int j = 0; j < LENGTH; j++) {
-			if (result[i][j] == "0")
-				blank[{ i, j }] = { "1","2","3","4","5","6","7","8","9" };
-			else
-				number[{ i, j }] = { result[i][j] };
-		}
-	}
-
-	// 공백 칸 리스트 중 숫자 칸 리스트에 포함된 숫자가 있을 경우 제거
-	for (const auto& num : number) {
-		for (const auto& b : blank) {
+void Row_Col_Clear(map<vector<int>, vector<string>> &blank, map<vector<int>, string> &number) {
+	for (const auto& num : number)
+		for (const auto& b : blank)
 			if (num.first[0] == b.first[0] || num.first[1] == b.first[1]) {
-				auto index = find(b.second.begin(), b.second.end(), num.second[0]);
+				auto index = find(b.second.begin(), b.second.end(), num.second);
 				if (index != b.second.end()) {
 					vector<string> tmp = b.second;
-					tmp.erase(remove(tmp.begin(), tmp.end(), num.second[0]), tmp.end());
+					tmp.erase(remove(tmp.begin(), tmp.end(), num.second), tmp.end());
 					blank[{ b.first[0], b.first[1] }] = tmp;
 				}
 			}
+}
+
+void Square_Clear(vector<vector<string>> &result, map<vector<int>, vector<string>> &blank, map<vector<int>, string> &number) {
+	for (int i = 0; i < LENGTH; i += 3)
+		for (int j = 0; j < LENGTH; j += 3) {
+			map<string, int> tmp;
+			map<string, vector<int>> pos;
+			int tmp_a = i / 3 * 3;
+			int tmp_b = j / 3 * 3;
+			for (int a = tmp_a; a < tmp_a + 3; a++)
+				for (int b = tmp_b; b < tmp_b + 3; b++)
+					if (result[a][b] == "0")
+						for (const auto& item : blank[{a, b}]) {
+							if (tmp.find(item) != tmp.end())
+								tmp[item] += 1;
+							else {
+								tmp[item] = 1;
+								pos[item] = { a, b };
+							}
+						}
+			for (const auto& item : tmp)
+				if (item.second == 1) {
+					bool flag = true;
+					int tmp_a = pos[item.first][0] / 3 * 3;
+					int tmp_b = pos[item.first][1] / 3 * 3;
+					for (int a = tmp_a; a < tmp_a + 3; a++)
+						for (int b = tmp_b; b < tmp_b + 3; b++)
+							if (result[a][b] == item.first) {
+								flag = false;
+								break;
+							}
+					if (flag) {
+						result[pos[item.first][0]][pos[item.first][1]] = item.first;
+						number[{pos[item.first][0], pos[item.first][1]}] = item.first;
+						blank.erase({ pos[item.first][0], pos[item.first][1] });
+					}
+				}
 		}
+}
+
+vector<vector<string>> calculate(vector<vector<string>> arr) {
+	vector<vector<string>> result = arr;
+	map<vector<int>, vector<string>> blank;
+	map<vector<int>, string> number;
+
+	// 공백 칸과 숫자 칸 분류하여 map 형태로 저장
+	for (int i = 0; i < LENGTH; i++)
+		for (int j = 0; j < LENGTH; j++) {
+			if (result[i][j] == "0") blank[{ i, j }] = { "1","2","3","4","5","6","7","8","9" };
+			else number[{ i, j }] = { result[i][j] };
+		}
+
+	// 공백 칸 리스트 중 숫자 칸 리스트에 포함된 숫자가 있을 경우 제거
+	Row_Col_Clear(blank, number);
+
+	vector<vector<string>> before_result;
+	while (before_result != result) {
+		before_result = result;
+
+		// 각 구역의 공백칸(nx3)을 모두 합쳐서 중복된 모든 요소를 제거하고 남은 수가 1개면 result에 값 넣고 없앰
+		Square_Clear(result, blank, number);
+
+		// 공백 칸 리스트 중 숫자 칸 리스트에 포함된 숫자가 있을 경우 제거
+		Row_Col_Clear(blank, number);
 	}
 
 	// 공백 칸 리스트의 value가 0개이면 없애고, 1개이면 result에 값을 넣고 없앰
@@ -105,15 +155,14 @@ vector<vector<string>> calculate(vector<vector<string>> arr) {
 			rmlist.push_back(item.first);
 		}
 	}
-	for (const auto& item : rmlist) {
+	for (const auto& item : rmlist)
 		blank.erase(item);
-	}
 
+	// 각 공백칸에 어떤 숫자가 가능한지 리스트 출력
 	for (const auto& item : blank) {
 		cout << "[" << item.first[0] << "," << item.first[1] << "]\t";
-		for (const auto& list : item.second) {
+		for (const auto& list : item.second)
 			cout << list << ",";
-		}
 		cout << endl;
 	}
 
