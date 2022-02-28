@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <map>
-#include <cmath>
 using namespace std;
 #include "testcase.h"
 
@@ -24,10 +23,9 @@ bool Row_Check(vector<vector<string>> arr) {
 	for (int i = 0; i < LENGTH; i++) {
 		map<string, int> list;
 		for (const auto& item : arr[i])
-			if (item != "0") {
+			if (item != "0")
 				if (list.find(item) == list.end()) list[item] = 1;
 				else return false;
-			}
 	}
 	return true;
 }
@@ -36,35 +34,29 @@ bool Col_Check(vector<vector<string>> arr) {
 	for (int i = 0; i < LENGTH; i++) {
 		map<string, int> list;
 		for (int j = 0; j < LENGTH; j++)
-			if (arr[j][i] != "0") {
+			if (arr[j][i] != "0")
 				if (list.find(arr[j][i]) == list.end()) list[arr[j][i]] = 1;
 				else return false;
-			}
 	}
 	return true;
 }
 
 bool Square_Check(vector<vector<string>> arr) {
-	map<string, int> list1, list2, list3;
+	vector< map<string, int>> list(3);
 	for (int i = 0; i < LENGTH; i++) {
-		if (i % (LENGTH / 3) == 0)
-			list1 = {}, list2 = {}, list3 = {};
+		if (i % (LENGTH / 3) == 0) list = { {}, {}, {} };
 
 		for (int j = 0; j < LENGTH; j++)
-			if (arr[i][j] != "0") {
-				if (j / (LENGTH / 3) == 0) {
-					if (list1.find(arr[i][j]) == list1.end()) list1[arr[i][j]] = 1;
+			if (arr[i][j] != "0")
+				if		(j / (LENGTH / 3) == 0)
+					if (list[0].find(arr[i][j]) == list[0].end()) list[0][arr[i][j]] = 1;
 					else return false;
-				}
-				else if (j / (LENGTH / 3) == 1) {
-					if (list2.find(arr[i][j]) == list2.end()) list2[arr[i][j]] = 1;
+				else if (j / (LENGTH / 3) == 1)
+					if (list[1].find(arr[i][j]) == list[1].end()) list[1][arr[i][j]] = 1;
 					else return false;
-				}
-				else {
-					if (list3.find(arr[i][j]) == list3.end()) list3[arr[i][j]] = 1;
+				else
+					if (list[2].find(arr[i][j]) == list[2].end()) list[2][arr[i][j]] = 1;
 					else return false;
-				}
-			}
 	}
 	return true;
 }
@@ -72,8 +64,26 @@ bool Square_Check(vector<vector<string>> arr) {
 bool Zero_Check(vector<vector<string>> arr) {
 	for (const auto &row : arr)
 		for (const auto& col : row)
-			if (col == "0")
-				return false;
+			if (col == "0") return false;
+	return true;
+}
+
+bool Row_Col_Square_Check(vector<vector<string>> arr) {
+	vector<map<string, int>> col(LENGTH);
+	vector<map<string, int>> square(LENGTH / 3);
+	for (int i = 0; i < LENGTH; i++) {
+		map<string, int> row;
+		if (i % 3 == 0) square = { {}, {}, {} };
+		for (int j = 0; j < LENGTH; j++)
+			if (arr[i][j] != "0") {
+				if (row.find(arr[i][j]) == row.end()) row[arr[i][j]] = 1;
+				else return false;
+				if (col[j].find(arr[i][j]) == col[j].end()) col[j][arr[i][j]] = 1;
+				else return false;
+				if (square[j / 3].find(arr[i][j]) == square[j / 3].end()) square[j / 3][arr[i][j]] = 1;
+				else return false;
+			}
+	}
 	return true;
 }
 
@@ -93,30 +103,26 @@ void Square_Clear(vector<vector<string>> &result, map<vector<int>, vector<string
 		for (int j = 0; j < LENGTH; j += 3) {
 			map<string, int> tmp;
 			map<string, vector<int>> pos;
-			int tmp_a = i / 3 * 3;
-			int tmp_b = j / 3 * 3;
-			for (int a = tmp_a; a < tmp_a + 3; a++)
-				for (int b = tmp_b; b < tmp_b + 3; b++)
+			for (int a = i / 3 * 3; a < i / 3 * 3 + 3; a++)
+				for (int b = j / 3 * 3; b < j / 3 * 3 + 3; b++)
 					if (result[a][b] == "0")
-						for (const auto& item : blank[{a, b}]) {
-							if (tmp.find(item) != tmp.end())
-								tmp[item] += 1;
+						for (const auto& item : blank[{a, b}])
+							if (tmp.find(item) != tmp.end()) tmp[item] += 1;
 							else {
 								tmp[item] = 1;
 								pos[item] = { a, b };
 							}
-						}
 			for (const auto& item : tmp)
 				if (item.second == 1) {
 					bool flag = true;
-					int tmp_a = pos[item.first][0] / 3 * 3;
-					int tmp_b = pos[item.first][1] / 3 * 3;
-					for (int a = tmp_a; a < tmp_a + 3; a++)
-						for (int b = tmp_b; b < tmp_b + 3; b++)
+					for (int a = pos[item.first][0] / 3 * 3; a < pos[item.first][0] / 3 * 3 + 3; a++) {
+						for (int b = pos[item.first][1] / 3 * 3; b < pos[item.first][1] / 3 * 3 + 3; b++)
 							if (result[a][b] == item.first) {
 								flag = false;
 								break;
 							}
+						if (!flag) break;
+					}
 					if (flag) {
 						result[pos[item.first][0]][pos[item.first][1]] = item.first;
 						number[{pos[item.first][0], pos[item.first][1]}] = item.first;
@@ -130,14 +136,11 @@ void Square_Clear_2(vector<vector<string>>& result, map<vector<int>, vector<stri
 	for (int i = 0; i < LENGTH; i += 3)
 		for (int j = 0; j < LENGTH; j += 3) {
 			vector<string> tmp;
-			int tmp_a = i / 3 * 3;
-			int tmp_b = j / 3 * 3;
-			for (int a = tmp_a; a < tmp_a + 3; a++)
-				for (int b = tmp_b; b < tmp_b + 3; b++)
-					if (result[a][b] != "0")
-						tmp.push_back(result[a][b]);
-			for (int a = tmp_a; a < tmp_a + 3; a++)
-				for (int b = tmp_b; b < tmp_b + 3; b++)
+			for (int a = i / 3 * 3; a < i / 3 * 3 + 3; a++)
+				for (int b = j / 3 * 3; b < j / 3 * 3 + 3; b++)
+					if (result[a][b] != "0") tmp.push_back(result[a][b]);
+			for (int a = i / 3 * 3; a < i / 3 * 3 + 3; a++)
+				for (int b = j / 3 * 3; b < j / 3 * 3 + 3; b++)
 					if (result[a][b] == "0") {
 						vector<string> newtmp;
 						for (const auto& item : blank[{a, b}])
@@ -149,17 +152,11 @@ void Square_Clear_2(vector<vector<string>>& result, map<vector<int>, vector<stri
 }
 
 void Blank_Clear(vector<vector<string>> &result, map<vector<int>, vector<string>> &blank) {
-	vector<vector<int>> rmlist;
-	for (const auto& item : blank) {
-		if (item.second.size() == 0)
-			rmlist.push_back(item.first);
-		else if (item.second.size() == 1) {
-			result[item.first[0]][item.first[1]] = item.second[0];
-			rmlist.push_back(item.first);
-		}
-	}
-	for (const auto& item : rmlist)
-		blank.erase(item);
+	map<vector<int>, vector<string>> tmp;
+	for (const auto& item : blank)
+		if		(item.second.size() >  1) tmp[item.first] = item.second;
+		else if (item.second.size() == 1) result[item.first[0]][item.first[1]] = item.second[0];
+	blank = tmp;
 }
 
 void Row_Blank_Clear(vector<vector<string>>& result, map<vector<int>, vector<string>>& blank, map<vector<int>, string>& number) {
@@ -167,12 +164,9 @@ void Row_Blank_Clear(vector<vector<string>>& result, map<vector<int>, vector<str
 	for (int i = 0; i < LENGTH; i += 3)
 		for (int j = 0; j < LENGTH; j += 3) {
 			vector<string> tmp;
-			int tmp_a = i / 3 * 3;
-			int tmp_b = j / 3 * 3;
-			for (int a = tmp_a; a < tmp_a + 3; a++)
-				for (int b = tmp_b; b < tmp_b + 3; b++)
-					if (result[a][b] != "0")
-						tmp.push_back(result[a][b]);
+			for (int a = i / 3 * 3; a < i / 3 * 3 + 3; a++)
+				for (int b = j / 3 * 3; b < j / 3 * 3 + 3; b++)
+					if (result[a][b] != "0") tmp.push_back(result[a][b]);
 			square.push_back(tmp);
 		}
 
@@ -193,29 +187,23 @@ void Row_Blank_Clear(vector<vector<string>>& result, map<vector<int>, vector<str
 }
 
 vector<vector<string>> Input_Value(vector<vector<string>> arr, map<vector<int>, vector<string>> blank) {
-	vector<vector<string>> result = arr;
-	map<vector<int>, vector<string>> b = blank;
-	vector<int> firstIt = b.begin()->first;
-	vector<string> secondIt = b.begin()->second;
+	vector<vector<string>>			 result		= arr;
+	map<vector<int>, vector<string>> b			= blank;
+	vector<int>						 firstIt	= b.begin()->first;
+	vector<string>					 secondIt	= b.begin()->second;
 	b.erase(b.begin());
 
 	for (const auto& item : secondIt) {
 		result[firstIt[0]][firstIt[1]] = item;
 
-		if (!Row_Check(result) || !Col_Check(result) || !Square_Check(result))
-			continue;
+		if (!Row_Col_Square_Check(result)) continue;
 
 		if (b.size() != 0) {
 			vector<vector<string>> tmp = Input_Value(result, b);
-			if (!Row_Check(tmp) || !Col_Check(tmp) || !Square_Check(tmp) || !Zero_Check(tmp))
-				continue;
-			else if (Row_Check(tmp) && Col_Check(tmp) && Square_Check(tmp)) 
-				return tmp;
-			else
-				result = tmp;
+			if (!Zero_Check(tmp)) continue;
+			else return tmp;
 		}
-		else
-			return result;
+		else return result;
 	}
 	return result;
 }
@@ -232,16 +220,15 @@ void Print_Board(vector<vector<string>> arr) {
 }
 
 vector<vector<string>> calculate(vector<vector<string>> arr) {
-	vector<vector<string>> result = arr;
+	vector<vector<string>>			 result = arr;
 	map<vector<int>, vector<string>> blank;
-	map<vector<int>, string> number;
+	map<vector<int>, string>		 number;
 
 	// 공백 칸과 숫자 칸 분류하여 map 형태로 저장
 	for (int i = 0; i < LENGTH; i++)
-		for (int j = 0; j < LENGTH; j++) {
+		for (int j = 0; j < LENGTH; j++)
 			if (result[i][j] == "0") blank[{ i, j }] = { "1","2","3","4","5","6","7","8","9" };
 			else number[{ i, j }] = { result[i][j] };
-		}
 
 	// 공백 칸 리스트 중 숫자 칸 리스트에 포함된 숫자가 있을 경우 제거
 	Row_Col_Clear(blank, number);
@@ -294,7 +281,7 @@ int main(void) {
 	else {
 		cout << "==== Please enter TEST MODE ==== " << endl;
 		cout << "1. Test Case Running" << endl;
-		cout << "2. Row, Col, Square check (you will input board)" << endl;
+		cout << "2. Row, Col, Square check (You have to enter the board.)" << endl;
 		cout << "3. Input board and calculate" << endl;
 		cout << "default : "<< TEST_MODE << endl;
 		cout << ">> ";
@@ -317,8 +304,7 @@ int main(void) {
 				Print_Board(TESTCASE_OUTPUT[index]);
 			}
 
-			if (input != TESTCASE_OUTPUT[index])
-				result = true;
+			if (input != TESTCASE_OUTPUT[index]) result = true;
 
 			string message = result ? "Fail" : "Success";
 			cout << endl << "Test Case " << index + 1 << " : " << message << endl;
@@ -333,11 +319,11 @@ int main(void) {
 			numbers.push_back(split(num, ' '));
 		}
 
-		string message = Row_Check(numbers) ? "No duplicates" : "duplicate existence";
-		cout << "Rows : " << message << endl;
-		message = Col_Check(numbers) ? "No duplicates" : "duplicate existence";
-		cout << "Cols : " << message << endl;
-		message = Square_Check(numbers) ? "No duplicates" : "duplicate existence";
+		string message	= Row_Check(numbers)	? "No duplicates" : "duplicate existence";
+		cout << "Rows : "	 << message << endl;
+		message			= Col_Check(numbers)	? "No duplicates" : "duplicate existence";
+		cout << "Cols : "	 << message << endl;
+		message			= Square_Check(numbers)	? "No duplicates" : "duplicate existence";
 		cout << "Squares : " << message << endl;
 	}
 	else {
@@ -353,14 +339,8 @@ int main(void) {
 
 		numbers = calculate(numbers);
 
-		for (int i = 0; i < LENGTH; i++) {
-			for (int j = 0; j < LENGTH; j++) {
-				cout << numbers[i][j] << " ";
-				if ((j + 1) % 3 == 0) cout << "\t";
-			}
-			cout << endl;
-			if ((i + 1) % 3 == 0) cout << endl;
-		}
+		cout << "==== result ====" << endl;
+		Print_Board(numbers);
 	}
 
 	return 0;
