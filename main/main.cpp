@@ -286,6 +286,7 @@ int main(void) {
 		cout << "default : "<< TEST_MODE << endl;
 		cout << ">> ";
 		cin >> TEST_MODE;
+		cin.get();
 	}
 
 	vector<vector<string>> numbers;
@@ -315,8 +316,14 @@ int main(void) {
 
 		for (int i = 0; i < LENGTH; i++) {
 			string num = "";
+			cout << "Input line " << i + 1 << " >> ";
 			getline(cin, num);
-			numbers.push_back(split(num, ' '));
+			vector<string> spt = split(num, ' ');
+			if (spt.size() != LENGTH) {
+				cout << "Please check your input!" << endl;
+				i--;
+			} 
+			else numbers.push_back(spt);
 		}
 
 		string message	= Row_Check(numbers)	? "No duplicates" : "duplicate existence";
@@ -331,15 +338,16 @@ int main(void) {
 		cout << "ex. line 1 >> 1 2 3 4 5 6 7 8 9" << endl;
 
 		for (int i = 0; i < LENGTH; i++) {
-			cout << "line " << i + 1 << " >> " << endl;
+			cout << "line " << i + 1 << " >> ";
 			string num = "";
 			getline(cin, num);
 			numbers.push_back(split(num, ' '));
 		}
 
+		cout << endl << "Calculating ...";
 		numbers = calculate(numbers);
 
-		cout << "==== result ====" << endl;
+		cout << "\r======= result =======" << endl;
 		Print_Board(numbers);
 	}
 
