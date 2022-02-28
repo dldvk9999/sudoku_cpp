@@ -2,14 +2,14 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include <algorithm>
 #include <map>
-#include "stdlib.h"
+#include <cmath>
 using namespace std;
 #include "testcase.h"
 
-constexpr auto LENGTH		= 9;
-constexpr auto TEST_MODE	= 1;	// 0 : OFF, 1 : Test case, 2 : Function Test
+constexpr auto LENGTH		= 9;	// Board Length (9, 16, 25 ...)
+constexpr auto PRINT_BOARD	= 0;	// 0 : OFF, 1 : Print ON
+auto		   TEST_MODE	= 1;	// 0 : OFF, 1 : Test case, 2 : Function Test
 
 vector<string> split(string input, char delimiter) {
 	vector<string> answer;
@@ -21,25 +21,25 @@ vector<string> split(string input, char delimiter) {
 }
 
 bool Row_Check(vector<vector<string>> arr) {
-	map<string, int> list;
 	for (int i = 0; i < LENGTH; i++) {
-		list = {};
-		for (const auto& item : arr[i]) {
-			if (list.find(item) == list.end()) list[item] = 1;
-			else return false;
-		}
+		map<string, int> list;
+		for (const auto& item : arr[i])
+			if (item != "0") {
+				if (list.find(item) == list.end()) list[item] = 1;
+				else return false;
+			}
 	}
 	return true;
 }
 
 bool Col_Check(vector<vector<string>> arr) {
-	map<string, int> list;
 	for (int i = 0; i < LENGTH; i++) {
-		list = {};
-		for (int j = 0; j < LENGTH; j++) {
-			if (list.find(arr[j][i]) == list.end()) list[arr[j][i]] = 1;
-			else return false;
-		}
+		map<string, int> list;
+		for (int j = 0; j < LENGTH; j++)
+			if (arr[j][i] != "0") {
+				if (list.find(arr[j][i]) == list.end()) list[arr[j][i]] = 1;
+				else return false;
+			}
 	}
 	return true;
 }
@@ -50,21 +50,30 @@ bool Square_Check(vector<vector<string>> arr) {
 		if (i % (LENGTH / 3) == 0)
 			list1 = {}, list2 = {}, list3 = {};
 
-		for (int j = 0; j < LENGTH; j++) {
-			if (j / (LENGTH / 3) == 0) {
-				if (list1.find(arr[i][j]) == list1.end()) list1[arr[i][j]] = 1;
-				else return false;
+		for (int j = 0; j < LENGTH; j++)
+			if (arr[i][j] != "0") {
+				if (j / (LENGTH / 3) == 0) {
+					if (list1.find(arr[i][j]) == list1.end()) list1[arr[i][j]] = 1;
+					else return false;
+				}
+				else if (j / (LENGTH / 3) == 1) {
+					if (list2.find(arr[i][j]) == list2.end()) list2[arr[i][j]] = 1;
+					else return false;
+				}
+				else {
+					if (list3.find(arr[i][j]) == list3.end()) list3[arr[i][j]] = 1;
+					else return false;
+				}
 			}
-			else if (j / (LENGTH / 3) == 1) {
-				if (list2.find(arr[i][j]) == list2.end()) list2[arr[i][j]] = 1;
-				else return false;
-			}
-			else {
-				if (list3.find(arr[i][j]) == list3.end()) list3[arr[i][j]] = 1;
-				else return false;
-			}
-		}
 	}
+	return true;
+}
+
+bool Zero_Check(vector<vector<string>> arr) {
+	for (const auto &row : arr)
+		for (const auto& col : row)
+			if (col == "0")
+				return false;
 	return true;
 }
 
@@ -183,6 +192,45 @@ void Row_Blank_Clear(vector<vector<string>>& result, map<vector<int>, vector<str
 			}
 }
 
+vector<vector<string>> Input_Value(vector<vector<string>> arr, map<vector<int>, vector<string>> blank) {
+	vector<vector<string>> result = arr;
+	map<vector<int>, vector<string>> b = blank;
+	vector<int> firstIt = b.begin()->first;
+	vector<string> secondIt = b.begin()->second;
+	b.erase(b.begin());
+
+	for (const auto& item : secondIt) {
+		result[firstIt[0]][firstIt[1]] = item;
+
+		if (!Row_Check(result) || !Col_Check(result) || !Square_Check(result))
+			continue;
+
+		if (b.size() != 0) {
+			vector<vector<string>> tmp = Input_Value(result, b);
+			if (!Row_Check(tmp) || !Col_Check(tmp) || !Square_Check(tmp) || !Zero_Check(tmp))
+				continue;
+			else if (Row_Check(tmp) && Col_Check(tmp) && Square_Check(tmp)) 
+				return tmp;
+			else
+				result = tmp;
+		}
+		else
+			return result;
+	}
+	return result;
+}
+
+void Print_Board(vector<vector<string>> arr) {
+	for (int i = 0; i < LENGTH; i++) {
+		for (int j = 0; j < LENGTH; j++) {
+			cout << arr[i][j] << " ";
+			if ((j + 1) % 3 == 0) cout << "\t";
+		}
+		cout << endl;
+		if ((i + 1) % 3 == 0) cout << endl;
+	}
+}
+
 vector<vector<string>> calculate(vector<vector<string>> arr) {
 	vector<vector<string>> result = arr;
 	map<vector<int>, vector<string>> blank;
@@ -218,54 +266,67 @@ vector<vector<string>> calculate(vector<vector<string>> arr) {
 		Blank_Clear(result, blank);
 	}
 
-	// 각 공백칸에 어떤 숫자가 가능한지 리스트 출력
-	for (const auto& item : blank) {
-		cout << "[" << item.first[0] << "," << item.first[1] << "]\t";
-		for (const auto& list : item.second)
-			cout << list << ",";
-		cout << endl;
-	}
+	// 공백 칸에 들어갈 수 있는 숫자 모두 넣어보기
+	result = Input_Value(result, blank);
 
 	return result;
 }
 
+bool IsSquare(unsigned int num) {
+	unsigned int temp;
+	switch (num & 0x0f) {
+	case 0:
+	case 1:
+	case 4:
+	case 9:
+		temp = (unsigned int)(sqrt((double)num) + 0.5);
+		return temp * temp == num;
+	default:
+		return false;
+	}
+}
+
 int main(void) {
+	if (!IsSquare(LENGTH)) {
+		cout << "Please check LENGTH ..." << endl;
+		return 0;
+	}
+	else {
+		cout << "==== Please enter TEST MODE ==== " << endl;
+		cout << "1. Test Case Running" << endl;
+		cout << "2. Row, Col, Square check (you will input board)" << endl;
+		cout << "3. Input board and calculate" << endl;
+		cout << "default : "<< TEST_MODE << endl;
+		cout << ">> ";
+		cin >> TEST_MODE;
+	}
+
 	vector<vector<string>> numbers;
 
 	if (TEST_MODE == 1) {
+		cout << "Test Case Running ..." << endl;
+
 		bool result = false;
 		for (int index = 0; index < TESTCASE_INPUT.size(); index++) {
 			vector<vector<string>> input = calculate(TESTCASE_INPUT[index]);
 
-			cout << "Input" << endl;
-			for (int i = 0; i < LENGTH; i++) {
-				for (int j = 0; j < LENGTH; j++) {
-					cout << input[i][j] << " ";
-					if ((j + 1) % 3 == 0) cout << "\t";
-				}
-				cout << endl;
-				if ((i + 1) % 3 == 0) cout << endl;
+			if (PRINT_BOARD) {
+				cout << "Input" << endl;
+				Print_Board(input);
+				cout << endl << "Output" << endl;
+				Print_Board(TESTCASE_OUTPUT[index]);
 			}
 
-			cout << endl << "Output" << endl;
-			for (int i = 0; i < LENGTH; i++) {
-				for (int j = 0; j < LENGTH; j++) {
-					cout << TESTCASE_OUTPUT[index][i][j] << " ";
-					if ((j + 1) % 3 == 0) cout << "\t";
-				}
-				cout << endl;
-				if ((i + 1) % 3 == 0) cout << endl;
-			}
-
-			if (input != TESTCASE_OUTPUT[index]) {
+			if (input != TESTCASE_OUTPUT[index])
 				result = true;
-				break;
-			}
+
+			string message = result ? "Fail" : "Success";
+			cout << endl << "Test Case " << index + 1 << " : " << message << endl;
 		}
-		string message = result ? "Fail" : "Success";
-		cout << endl << message << endl;
 	}
 	else if (TEST_MODE == 2) {
+		cout << "Check board ..." << endl;
+
 		for (int i = 0; i < LENGTH; i++) {
 			string num = "";
 			getline(cin, num);
@@ -280,7 +341,11 @@ int main(void) {
 		cout << "Squares : " << message << endl;
 	}
 	else {
+		cout << "==== Input numbers ====" << endl;
+		cout << "ex. line 1 >> 1 2 3 4 5 6 7 8 9" << endl;
+
 		for (int i = 0; i < LENGTH; i++) {
+			cout << "line " << i + 1 << " >> " << endl;
 			string num = "";
 			getline(cin, num);
 			numbers.push_back(split(num, ' '));
