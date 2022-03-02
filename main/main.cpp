@@ -3,12 +3,13 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <fstream>
 using namespace std;
 #include "testcase.h"
 
-constexpr auto LENGTH		= 9;	// Board Length (9, 16, 25 ...)
-constexpr auto PRINT_BOARD	= 0;	// 0 : OFF, 1 : Print ON
-auto		   TEST_MODE	= 1;	// 0 : OFF, 1 : Test case, 2 : Function Test
+int LENGTH			= 9;
+int PRINT_BOARD		= 0;
+int TEST_MODE		= 1;
 
 vector<string> split(string input, char delimiter) {
 	vector<string> answer;
@@ -273,83 +274,140 @@ bool IsSquare(unsigned int num) {
 	}
 }
 
-int main(void) {
-	if (!IsSquare(LENGTH)) {
-		cout << "Please check LENGTH ..." << endl;
-		return 0;
+void Test_Mode_1() {
+	cout << "Test Case Running ..." << endl;
+
+	bool result = false;
+	for (int index = 0; index < TESTCASE_INPUT.size(); index++) {
+		vector<vector<string>> input = calculate(TESTCASE_INPUT[index]);
+
+		if (PRINT_BOARD) {
+			cout << "Input" << endl;
+			Print_Board(input);
+			cout << endl << "Output" << endl;
+			Print_Board(TESTCASE_OUTPUT[index]);
+		}
+
+		if (input != TESTCASE_OUTPUT[index]) result = true;
+
+		string message = result ? "Fail" : "Success";
+		cout << endl << "Test Case " << index + 1 << " : " << message << endl;
+	}
+}
+
+void Test_Mode_2(vector<vector<string>> numbers) {
+	cout << "Check board ..." << endl;
+
+	for (int i = 0; i < LENGTH; i++) {
+		string num = "";
+		cout << "Input line " << i + 1 << " >> ";
+		getline(cin, num);
+		vector<string> spt = split(num, ' ');
+		if (spt.size() != LENGTH) {
+			cout << "Please check your input!" << endl;
+			i--;
+		}
+		else numbers.push_back(spt);
+	}
+
+	string message = Row_Check(numbers) ? "No duplicates" : "duplicate existence";
+	cout << "Rows : " << message << endl;
+	message = Col_Check(numbers) ? "No duplicates" : "duplicate existence";
+	cout << "Cols : " << message << endl;
+	message = Square_Check(numbers) ? "No duplicates" : "duplicate existence";
+	cout << "Squares : " << message << endl;
+}
+
+void Test_Mode_3(vector<vector<string>> numbers) {
+	cout << "==== Input numbers ====" << endl;
+	cout << "ex. line 1 >> 1 2 3 4 5 6 7 8 9" << endl;
+
+	for (int i = 0; i < LENGTH; i++) {
+		cout << "line " << i + 1 << " >> ";
+		string num = "";
+		getline(cin, num);
+		numbers.push_back(split(num, ' '));
+	}
+
+	cout << endl << "Calculating ...";
+	numbers = calculate(numbers);
+	cout << "\r======= result =======" << endl;
+	Print_Board(numbers);
+}
+
+int Read_Config() {
+	ifstream Config("sudoku.conf", ios::in | ios::binary);
+	if (Config.is_open()) {
+		for (int i = 0; i < 3; i++) {
+			string s;
+			Config >> s;
+			vector<string> tmp = split(s, '=');
+
+			bool isStringNumber = true;
+			for (int i = 0; i < tmp[1].length(); i++)
+				if (isdigit(tmp[1][i]) == 0) {
+					isStringNumber = false;
+					break;
+				}
+
+			if (isStringNumber) {
+				int c = stoi(tmp[1]);
+				if (i == 0 && !IsSquare(c)) {
+					cout << "Please check Config ..." << endl;
+					return 0;
+				}
+				if		(i == 0) LENGTH		 = c;
+				else if (i == 1) PRINT_BOARD = c;
+				else			 TEST_MODE	 = c;
+			}
+			else {
+				cout << "Please check Config ..." << endl;
+				return 0;
+			}
+		}
+		Config.close();
 	}
 	else {
-		cout << "==== Please enter TEST MODE ==== " << endl;
-		cout << "1. Test Case Running" << endl;
-		cout << "2. Row, Col, Square check (You have to enter the board.)" << endl;
-		cout << "3. Input board and calculate" << endl;
-		cout << "default : "<< TEST_MODE << endl;
-		cout << ">> ";
-		cin >> TEST_MODE;
-		cin.get();
+		ofstream Config("sudoku.conf", ios::out);
+		Config << "LENGTH=" << LENGTH << endl;
+		Config << "PRINT_BOARD=" << PRINT_BOARD << endl;
+		Config << "TEST_MODE=" << TEST_MODE << endl << endl;
+		Config << "# LENGTH : Board Length(ex. 9, 16, 25 ...)" << endl;
+		Config << "# PRINT_BOARD : 0 - OFF, 1 - Print ON" << endl;
+		Config << "# TEST_MODE : 0 - OFF, 1 - Test case, 2 - Function Test" << endl;
+		Config.close();
 	}
+	return 1;
+}
+
+void Print_UI() {
+	cout << "==== Please enter TEST MODE ==== " << endl;
+	cout << "1. Test Case Running" << endl;
+	cout << "2. Row, Col, Square check (You have to enter the board.)" << endl;
+	cout << "3. Input board and calculate" << endl;
+	cout << "4. Exit" << endl;
+	cout << "default : " << TEST_MODE << endl;
+	cout << ">> ";
+	cin >> TEST_MODE;
+	cin.get();
+}
+
+int main(void) {
+	if (!Read_Config()) return 0;
+
+	Print_UI();
 
 	vector<vector<string>> numbers;
-
-	if (TEST_MODE == 1) {
-		cout << "Test Case Running ..." << endl;
-
-		bool result = false;
-		for (int index = 0; index < TESTCASE_INPUT.size(); index++) {
-			vector<vector<string>> input = calculate(TESTCASE_INPUT[index]);
-
-			if (PRINT_BOARD) {
-				cout << "Input" << endl;
-				Print_Board(input);
-				cout << endl << "Output" << endl;
-				Print_Board(TESTCASE_OUTPUT[index]);
-			}
-
-			if (input != TESTCASE_OUTPUT[index]) result = true;
-
-			string message = result ? "Fail" : "Success";
-			cout << endl << "Test Case " << index + 1 << " : " << message << endl;
-		}
+	switch (TEST_MODE) {
+	case 1:
+		Test_Mode_1(); break;
+	case 2:
+		Test_Mode_2(numbers); break;
+	case 3:
+		Test_Mode_3(numbers); break;
+	case 4:
+		return 0;
+	default:
+		Test_Mode_3(numbers); break;
 	}
-	else if (TEST_MODE == 2) {
-		cout << "Check board ..." << endl;
-
-		for (int i = 0; i < LENGTH; i++) {
-			string num = "";
-			cout << "Input line " << i + 1 << " >> ";
-			getline(cin, num);
-			vector<string> spt = split(num, ' ');
-			if (spt.size() != LENGTH) {
-				cout << "Please check your input!" << endl;
-				i--;
-			} 
-			else numbers.push_back(spt);
-		}
-
-		string message	= Row_Check(numbers)	? "No duplicates" : "duplicate existence";
-		cout << "Rows : "	 << message << endl;
-		message			= Col_Check(numbers)	? "No duplicates" : "duplicate existence";
-		cout << "Cols : "	 << message << endl;
-		message			= Square_Check(numbers)	? "No duplicates" : "duplicate existence";
-		cout << "Squares : " << message << endl;
-	}
-	else {
-		cout << "==== Input numbers ====" << endl;
-		cout << "ex. line 1 >> 1 2 3 4 5 6 7 8 9" << endl;
-
-		for (int i = 0; i < LENGTH; i++) {
-			cout << "line " << i + 1 << " >> ";
-			string num = "";
-			getline(cin, num);
-			numbers.push_back(split(num, ' '));
-		}
-
-		cout << endl << "Calculating ...";
-		numbers = calculate(numbers);
-
-		cout << "\r======= result =======" << endl;
-		Print_Board(numbers);
-	}
-
-	return 0;
 }
